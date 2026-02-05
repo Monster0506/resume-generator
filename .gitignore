@@ -1,0 +1,23 @@
+# Dependencies
+node_modules
+
+# Build output
+web/build
+web/.svelte-kit
+web/.vercel
+
+# Environment
+.env
+.env.*
+!.env.example
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Vite
+vite.config.js.timestamp-*
+vite.config.ts.timestamp-*
+
+# AI
+.claude

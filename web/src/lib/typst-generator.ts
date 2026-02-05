@@ -1,9 +1,9 @@
 import type { ResumeData, WorkExperience, Project, Education, Leadership, Achievement, SkillCategory } from './types';
 
 function formatDate(dateStr: string): string {
-	if (!dateStr) return '';
+	if (!dateStr) return 'datetime.today()';
 	const [year, month] = dateStr.split('-');
-	return `datetime(year: ${year}, month: ${month}, day: 1)`;
+	return `datetime(year: ${year}, month: ${parseInt(month)}, day: 1)`;
 }
 
 function escapeTypst(str: string): string {
@@ -11,8 +11,7 @@ function escapeTypst(str: string): string {
 		.replace(/\\/g, '\\\\')
 		.replace(/"/g, '\\"')
 		.replace(/#/g, '\\#')
-		.replace(/\$/g, '\\$')
-		.replace(/@/g, '\\@');
+		.replace(/\$/g, '\\$');
 }
 
 function generateProfile(summary: string): string {
@@ -174,7 +173,6 @@ export function generateTypstCode(data: ResumeData): string {
   bottom-margin: 0.15in,
   left-margin: 0.15in,
   right-margin: 0.15in,
-  font: "Libertinus Serif",
   font-size: font-size,
   personal-info-font-size: (font-size+personal-info-addition),
   author-name: "",
@@ -205,7 +203,7 @@ export function generateTypstCode(data: ResumeData): string {
   )
 
   set text(
-    font: font, size: font-size, lang: "en", ligatures: false, fill: text-color
+    size: font-size, lang: "en", ligatures: false, fill: text-color
   )
 
   show heading.where(level: 1): it => block(width: 100%)[

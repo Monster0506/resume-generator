@@ -1,25 +1,23 @@
-import { createTypstCompiler, type TypstCompiler } from '@myriaddreamin/typst.ts/compiler';
+import { $typst } from '@myriaddreamin/typst.ts';
 
-let compiler: TypstCompiler | null = null;
 let initPromise: Promise<void> | null = null;
 let initError: Error | null = null;
+let initialized = false;
 
 export async function initCompiler(): Promise<void> {
-	if (compiler) return;
+	if (initialized) return;
 	if (initError) throw initError;
 	if (initPromise) return initPromise;
 
 	initPromise = (async () => {
 		try {
-			const c = createTypstCompiler();
-			if (!c) {
-				throw new Error('Failed to create Typst compiler - WebAssembly may not be supported');
-			}
-			// Load WASM from static folder
-			await c.init({
+			// Configure the compiler to load WASM from static folder
+			$typst.setCompilerInitOptions({
 				getModule: () => fetch('/typst_ts_web_compiler_bg.wasm').then(r => r.arrayBuffer())
 			});
-			compiler = c;
+			// Initialize by doing a simple compile - this will load fonts from CDN
+			await $typst.pdf({ mainContent: '' });
+			initialized = true;
 		} catch (err) {
 			initError = err instanceof Error ? err : new Error(String(err));
 			initPromise = null;
@@ -32,26 +30,14 @@ export async function initCompiler(): Promise<void> {
 
 export async function compileToPdf(typstCode: string): Promise<Uint8Array> {
 	await initCompiler();
-	if (!compiler) throw new Error('Typst compiler failed to initialize. Try refreshing the page.');
 
-	// Reset and add the main file
-	await compiler.reset();
-	compiler.addSource('/main.typ', typstCode);
-
-	// Compile to PDF (format 1 = pdf)
-	const result = await compiler.compile({
-		mainFilePath: '/main.typ',
-		format: 1 // CompileFormatEnum.pdf
-	});
-
-	if (!result.result) {
-		const errors = result.diagnostics?.map(d =>
-			typeof d === 'string' ? d : d.message
-		).join('\n') || 'Unknown compilation error';
-		throw new Error(errors);
+	try {
+		const pdfData = await $typst.pdf({ mainContent: typstCode });
+		return pdfData;
+	} catch (err) {
+		const message = err instanceof Error ? err.message : String(err);
+		throw new Error(message);
 	}
-
-	return result.result;
 }
 
 export function downloadPdf(pdfData: Uint8Array, filename: string = 'resume.pdf'): void {

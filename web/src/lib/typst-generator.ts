@@ -1,4 +1,4 @@
-import type { ResumeData, WorkExperience, Project, Education, SkillCategory } from './types';
+import type { ResumeData, WorkExperience, Project, Education, Leadership, Achievement, SkillCategory } from './types';
 
 function formatDate(dateStr: string): string {
 	if (!dateStr) return '';
@@ -15,37 +15,10 @@ function escapeTypst(str: string): string {
 		.replace(/@/g, '\\@');
 }
 
-function generateWorkExperience(work: WorkExperience): string {
-	const endDate = work.isPresent ? '"Present"' : formatDate(work.endDate);
-	const bullets = work.bullets
-		.filter(b => b.trim())
-		.map(b => `  - ${escapeTypst(b)}`)
-		.join('\n');
-
-	return `#work-heading(
-  "${escapeTypst(work.title)}",
-  "${escapeTypst(work.company)}",
-  "${escapeTypst(work.location)}",
-  ${formatDate(work.startDate)},
-  ${endDate}
-)[
-${bullets}
-]`;
-}
-
-function generateProject(project: Project): string {
-	const bullets = project.bullets
-		.filter(b => b.trim())
-		.map(b => `  - ${escapeTypst(b)}`)
-		.join('\n');
-
-	return `#project-heading(
-  "${escapeTypst(project.name)}",
-  stack: "${escapeTypst(project.stack)}",
-  project-url: "${escapeTypst(project.url)}"
-)[
-${bullets}
-]`;
+function generateProfile(summary: string): string {
+	if (!summary.trim()) return '';
+	return `= Profile
+${escapeTypst(summary)}`;
 }
 
 function generateEducation(edu: Education): string {
@@ -67,6 +40,58 @@ ${bullets}
 ]`;
 }
 
+function generateProject(project: Project): string {
+	const bullets = project.bullets
+		.filter(b => b.trim())
+		.map(b => `  - ${escapeTypst(b)}`)
+		.join('\n');
+
+	return `#project-heading(
+  "${escapeTypst(project.name)}",
+  stack: "${escapeTypst(project.stack)}",
+  project-url: "${escapeTypst(project.url)}",
+  award: "${escapeTypst(project.award)}"
+)[
+${bullets}
+]`;
+}
+
+function generateWorkExperience(work: WorkExperience): string {
+	const endDate = work.isPresent ? '"Present"' : formatDate(work.endDate);
+	const bullets = work.bullets
+		.filter(b => b.trim())
+		.map(b => `  - ${escapeTypst(b)}`)
+		.join('\n');
+
+	return `#work-heading(
+  "${escapeTypst(work.title)}",
+  "${escapeTypst(work.company)}",
+  "${escapeTypst(work.location)}",
+  ${formatDate(work.startDate)},
+  ${endDate}
+)[
+${bullets}
+]`;
+}
+
+function generateLeadership(lead: Leadership): string {
+	const endDate = lead.isPresent ? '"Present"' : formatDate(lead.endDate);
+	const bullets = lead.bullets
+		.filter(b => b.trim())
+		.map(b => `  - ${escapeTypst(b)}`)
+		.join('\n');
+
+	return `#work-heading(
+  "${escapeTypst(lead.title)}",
+  "${escapeTypst(lead.organization)}",
+  "${escapeTypst(lead.location)}",
+  ${formatDate(lead.startDate)},
+  ${endDate}
+)[
+${bullets}
+]`;
+}
+
 function generateSkills(skills: SkillCategory[]): string {
 	if (skills.length === 0) return '';
 
@@ -75,33 +100,58 @@ function generateSkills(skills: SkillCategory[]): string {
 		.map(s => `- *${escapeTypst(s.category)}:* ${escapeTypst(s.skills)}`)
 		.join('\n');
 
-	return `#custom-title("Skills")[
+	if (!skillLines) return '';
+
+	return `= Skills
 #skills[
 ${skillLines}
-]
 ]`;
 }
 
-export function generateTypstCode(data: ResumeData): string {
-	const { personalInfo, workExperience, projects, education, skills, colors } = data;
+function generateAchievements(achievements: Achievement[]): string {
+	if (achievements.length === 0) return '';
 
-	const workSection = workExperience.length > 0
-		? `= Experience\n${workExperience.map(generateWorkExperience).join('\n\n')}`
+	const achievementItems = achievements
+		.filter(a => a.title.trim())
+		.map(a => {
+			const datePart = a.date ? ` | ${escapeTypst(a.date)}` : '';
+			const descPart = a.description.trim() ? `\n${escapeTypst(a.description)}` : '';
+			return `#achievement-heading("${escapeTypst(a.title)}", "${datePart.replace(' | ', '')}")[${descPart}]`;
+		})
+		.join('\n\n');
+
+	if (!achievementItems) return '';
+
+	return `= Achievements / Certifications
+${achievementItems}`;
+}
+
+export function generateTypstCode(data: ResumeData): string {
+	const { personalInfo, profile, education, projects, workExperience, leadership, skills, achievements, colors } = data;
+
+	const profileSection = generateProfile(profile.summary);
+
+	const educationSection = education.length > 0
+		? `= Education\n${education.map(generateEducation).join('\n\n')}`
 		: '';
 
 	const projectSection = projects.length > 0
 		? `= Projects\n${projects.map(generateProject).join('\n\n')}`
 		: '';
 
-	const educationSection = education.length > 0
-		? `= Education\n${education.map(generateEducation).join('\n\n')}`
+	const workSection = workExperience.length > 0
+		? `= Experience\n${workExperience.map(generateWorkExperience).join('\n\n')}`
+		: '';
+
+	const leadershipSection = leadership.length > 0
+		? `= Leadership\n${leadership.map(generateLeadership).join('\n\n')}`
 		: '';
 
 	const skillsSection = generateSkills(skills);
 
-	return `#import "@preview/cades:0.3.1": qr-code
+	const achievementsSection = generateAchievements(achievements);
 
-#let head-color = rgb("${colors.headColor}")
+	return `#let head-color = rgb("${colors.headColor}")
 #let text-color = rgb("${colors.textColor}")
 #let acct-color = rgb("${colors.accentColor}")
 #let link-color = rgb("${colors.linkColor}")
@@ -200,7 +250,6 @@ export function generateTypstCode(data: ResumeData): string {
           #{
             let sepSpace = 0.2em
             let items = (
-              contact_item(location),
               contact_item(email, link-type: "mailto:"),
               contact_item(website, link-type: "https://"),
               contact_item(
@@ -232,28 +281,12 @@ export function generateTypstCode(data: ResumeData): string {
   body
 }
 
-#let generic_1x2(r1c1, r1c2) = {
-  grid(
-    columns: (1fr, 1fr),
-    align(left)[#r1c1],
-    align(right)[#r1c2]
-  )
-}
-
 #let generic_2x2(cols, r1c1, r1c2, r2c1, r2c2) = {
-  assert.eq(type(cols), array)
-
   grid(
     columns: cols,
     align(left)[#r1c1 \\ #r2c1],
     align(right)[#r1c2 \\ #r2c2]
   )
-}
-
-#let custom-title(title, spacing-between: -0.8em, body) = {
-  text([= #title])
-  body
-  v(spacing-between)
 }
 
 #let skills(body) = {
@@ -270,9 +303,6 @@ export function generateTypstCode(data: ResumeData): string {
 }
 
 #let period_worked(start-date, end-date) = {
-  assert.eq(type(start-date), datetime)
-  assert(type(end-date) == datetime or type(end-date) == str)
-
   if type(end-date) == str and end-date == "Present" {
     end-date = datetime.today()
   }
@@ -291,9 +321,6 @@ export function generateTypstCode(data: ResumeData): string {
   }
 
 #let work-heading(title, company, location, start-date, end-date, body) = {
-  assert.eq(type(start-date), datetime)
-  assert(type(end-date) == datetime or type(end-date) == str)
-
   generic_2x2(
     (1fr, 1fr),
     [#bold(title)], [#bold(period_worked(start-date, end-date))],
@@ -308,7 +335,7 @@ export function generateTypstCode(data: ResumeData): string {
   }
 }
 
-#let project-heading(name, stack: "", project-url: "", body) = {
+#let project-heading(name, stack: "", project-url: "", award: "", body) = {
   if project-url.len() != 0 { underline(offset: .3em, link2(project-url)[#bold(name)]) } else {
     [#bold(name)]
   }
@@ -317,6 +344,9 @@ export function generateTypstCode(data: ResumeData): string {
       #show "|": sep => { h(0.3em); [|]; h(0.3em) }
       |#bold(stack)
     ]
+  }
+  if award != "" {
+    [ · #award]
   }
   v(-0.2em)
   if body != [] {
@@ -328,9 +358,6 @@ export function generateTypstCode(data: ResumeData): string {
 }
 
 #let education-heading(institution, location, degree, major, start-date, end-date, body) = {
-  assert.eq(type(start-date), datetime)
-  assert(type(end-date) == datetime or type(end-date) == str)
-
   generic_2x2(
     (70%, 30%),
     [#bold(institution)], [#bold(location)],
@@ -345,11 +372,23 @@ export function generateTypstCode(data: ResumeData): string {
   }
 }
 
+#let achievement-heading(title, date, body) = {
+  [#bold(title)]
+  if date != "" {
+    [ | #date]
+  }
+  if body != [] {
+    v(-0.4em)
+    set par(leading: 0.6em)
+    body
+  }
+  v(-0.2em)
+}
+
 // ========== RESUME CONTENT ==========
 
 #show: resume.with(
   author-name: "${escapeTypst(personalInfo.name)}",
-  location: "${escapeTypst(personalInfo.location)}",
   email: "${escapeTypst(personalInfo.email)}",
   phone: "${escapeTypst(personalInfo.phone)}",
   website: "${escapeTypst(personalInfo.website)}",
@@ -357,12 +396,18 @@ export function generateTypstCode(data: ResumeData): string {
   github-username: "${escapeTypst(personalInfo.github)}",
 )
 
-${workSection}
-
-${projectSection}
+${profileSection}
 
 ${educationSection}
 
+${projectSection}
+
+${workSection}
+
+${leadershipSection}
+
 ${skillsSection}
+
+${achievementsSection}
 `;
 }

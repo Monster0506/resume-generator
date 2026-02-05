@@ -8,6 +8,10 @@ export interface PersonalInfo {
 	github: string;
 }
 
+export interface Profile {
+	summary: string;
+}
+
 export interface WorkExperience {
 	id: string;
 	title: string;
@@ -24,6 +28,7 @@ export interface Project {
 	name: string;
 	stack: string;
 	url: string;
+	award: string; // e.g., "NexHacks 2026 (1st Place)"
 	bullets: string[];
 }
 
@@ -37,6 +42,24 @@ export interface Education {
 	endDate: string;
 	isPresent: boolean;
 	bullets: string[];
+}
+
+export interface Leadership {
+	id: string;
+	title: string;
+	organization: string;
+	location: string;
+	startDate: string;
+	endDate: string;
+	isPresent: boolean;
+	bullets: string[];
+}
+
+export interface Achievement {
+	id: string;
+	title: string;
+	date: string;
+	description: string;
 }
 
 export interface SkillCategory {
@@ -54,10 +77,13 @@ export interface ColorSettings {
 
 export interface ResumeData {
 	personalInfo: PersonalInfo;
-	workExperience: WorkExperience[];
-	projects: Project[];
+	profile: Profile;
 	education: Education[];
+	projects: Project[];
+	workExperience: WorkExperience[];
+	leadership: Leadership[];
 	skills: SkillCategory[];
+	achievements: Achievement[];
 	colors: ColorSettings;
 }
 
@@ -71,10 +97,15 @@ export const defaultResumeData: ResumeData = {
 		linkedin: '',
 		github: ''
 	},
-	workExperience: [],
-	projects: [],
+	profile: {
+		summary: ''
+	},
 	education: [],
+	projects: [],
+	workExperience: [],
+	leadership: [],
 	skills: [],
+	achievements: [],
 	colors: {
 		headColor: '#22227f',
 		textColor: '#1b1b1b',
